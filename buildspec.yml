@@ -5,6 +5,7 @@ phases:
         - npm install -g serverless
     build:
       commands:
+        - "ls -l"
         - "cd ts-simulator && serverless deploy"
         - "cd backend && aws cloudformation describe-stacks --stack-name $(serverless info | grep service: | cut -d' ' -f2)-$(serverless info | grep stage: | cut -d' ' -f2) --query 'Stacks[0].Outputs[?OutputKey==`ServiceEndpoint`].OutputValue' --output text > ../service_endpoint.txt"
 artifacts:
