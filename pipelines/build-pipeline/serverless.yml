@@ -17,6 +17,7 @@ resources:
     ArtifactStoreBucket:
       Type: AWS::S3::Bucket
       Properties:
+        BucketName: ${self:service}-artifacts
         VersioningConfiguration:
           Status: Enabled
         AccessControl: BucketOwnerFullControl
