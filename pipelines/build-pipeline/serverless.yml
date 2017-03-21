@@ -79,7 +79,7 @@ resources:
                   Branch: master
                   OAuthToken: ${self:custom.oauthToken}
                 RunOrder: 1
-          - Name: UnitTest
+          - Name: Test
             Actions:
             - Name: UnitTest
               ActionTypeId:
@@ -135,7 +135,7 @@ resources:
           ComputeType: BUILD_GENERAL1_SMALL
           Image: aws/codebuild/python:2.7.12
           Type: LINUX_CONTAINER
-        Name: UnitTest
+        Name: ${self:service}-UnitTest
         ServiceRole:
           Ref: BuildRole
         Source:
@@ -162,7 +162,7 @@ resources:
           ComputeType: BUILD_GENERAL1_SMALL
           Image: aws/codebuild/nodejs:7.0.0
           Type: LINUX_CONTAINER
-        Name: Deploy
+        Name: ${self:service}-Deploy
         ServiceRole:
           Ref: BuildRole
         Source:
@@ -186,7 +186,7 @@ resources:
           ComputeType: BUILD_GENERAL1_SMALL
           Image: aws/codebuild/nodejs:7.0.0
           Type: LINUX_CONTAINER
-        Name: Package
+        Name: ${self:service}-Package
         ServiceRole:
           Ref: BuildRole
         Source:
