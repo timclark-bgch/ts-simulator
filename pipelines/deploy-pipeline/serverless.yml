@@ -6,7 +6,7 @@ provider:
   runtime: python2.7
 
 custom:
-  oauthToken: c5749ddf0d666dcf074441c061ef362c9217e30e
+  oauthToken: UNKNOWN
 
 functions:
   hello:
