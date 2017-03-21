@@ -1,0 +1,203 @@
+service: ts-simulator-deploy
+
+provider:
+  name: aws
+  region: eu-west-1
+  runtime: python2.7
+
+custom:
+  oauthToken: c5749ddf0d666dcf074441c061ef362c9217e30e
+
+functions:
+  hello:
+    handler: handler.hello
+
+resources:
+  Resources:
+    ArtifactStoreBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        VersioningConfiguration:
+          Status: Enabled
+        AccessControl: BucketOwnerFullControl
+
+    BuildRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/AdministratorAccess
+
+    PipelineRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+        Path: /
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/AdministratorAccess
+
+    Pipeline:
+      Type: AWS::CodePipeline::Pipeline
+      Properties:
+        Name: ts-simulator-build
+        RoleArn:
+          Fn::GetAtt:
+           - PipelineRole
+           - Arn
+        ArtifactStore:
+          Location:
+            Ref:
+              ArtifactStoreBucket
+          Type: S3
+        Stages:
+          - Name: Checkout
+            Actions:
+              - InputArtifacts: []
+                Name: Source
+                ActionTypeId:
+                  Category: Source
+                  Owner: ThirdParty
+                  Version: 1
+                  Provider: GitHub
+                OutputArtifacts:
+                  - Name: SourceOutput
+                Configuration:
+                  Owner: timclark-bgch
+                  Repo: ts-simulator
+                  Branch: master
+                  OAuthToken: ${self:custom.oauthToken}
+                RunOrder: 1
+          - Name: UnitTest
+            Actions:
+            - Name: UnitTest
+              ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Version: 1
+                  Provider: CodeBuild
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: UnitTestOutput
+              Configuration:
+                  ProjectName:
+                    Ref: UnitTest
+              RunOrder: 1
+            - Name: Deploy
+              ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Version: 1
+                  Provider: CodeBuild
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: DeployOutput
+              Configuration:
+                  ProjectName:
+                    Ref: Deploy
+              RunOrder: 2
+          - Name: Package
+            Actions:
+            - Name: Package
+              ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Version: 1
+                  Provider: CodeBuild
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: PackageOutput
+              Configuration:
+                  ProjectName:
+                    Ref: Package
+              RunOrder: 1
+
+    UnitTest:
+      Type: AWS::CodeBuild::Project
+      Properties:
+        Artifacts:
+          Type: CODEPIPELINE
+        Environment:
+          ComputeType: BUILD_GENERAL1_SMALL
+          Image: aws/codebuild/python:2.7.12
+          Type: LINUX_CONTAINER
+        Name: UnitTest
+        ServiceRole:
+          Ref: BuildRole
+        Source:
+          Type: CODEPIPELINE
+          BuildSpec: |
+            version: 0.1
+            phases:
+              install:
+                commands:
+                  - python --version
+              build:
+                commands:
+                  - python --version
+              post_build:
+                commands:
+                  - python --version
+
+    Deploy:
+      Type: AWS::CodeBuild::Project
+      Properties:
+        Artifacts:
+          Type: CODEPIPELINE
+        Environment:
+          ComputeType: BUILD_GENERAL1_SMALL
+          Image: aws/codebuild/nodejs:7.0.0
+          Type: LINUX_CONTAINER
+        Name: Deploy
+        ServiceRole:
+          Ref: BuildRole
+        Source:
+          Type: CODEPIPELINE
+          BuildSpec: |
+            version: 0.1
+            phases:
+              install:
+                commands:
+                  - npm install -g serverless
+              build:
+                commands:
+                  - serverless deploy
+
+    Package:
+      Type: AWS::CodeBuild::Project
+      Properties:
+        Artifacts:
+          Type: CODEPIPELINE
+        Environment:
+          ComputeType: BUILD_GENERAL1_SMALL
+          Image: aws/codebuild/nodejs:7.0.0
+          Type: LINUX_CONTAINER
+        Name: Package
+        ServiceRole:
+          Ref: BuildRole
+        Source:
+          Type: CODEPIPELINE
+          BuildSpec: |
+            version: 0.1
+            phases:
+              build:
+                commands:
+                  - ls -l
+            artifacts:
+              files:
+                - "**/*"
+
