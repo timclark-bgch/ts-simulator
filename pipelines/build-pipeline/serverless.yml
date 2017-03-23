@@ -4,6 +4,15 @@ provider:
   name: aws
   region: eu-west-1
   runtime: python2.7
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - codepipeline:*
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: "*"
 
 custom:
   oauthToken: ${file(oauth_token.yml):github}
@@ -11,6 +20,16 @@ custom:
 functions:
   hello:
     handler: handler.hello
+  store:
+    handler: handler.store
+    environment:
+      storage_bucket: ${self:service}-release
+      storage_key: ts-simulator-release.zip
+    timeout: 300
+  release:
+    handler: handler.release
+    events:
+      - s3: ${self:service}-release
 
 resources:
   Resources:
@@ -82,33 +101,44 @@ resources:
                 RunOrder: 1
           - Name: Test
             Actions:
+            - Name: Lambda
+              ActionTypeId:
+                Category: Invoke
+                Owner: AWS
+                Version: 1
+                Provider: Lambda
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts: []
+              Configuration:
+                FunctionName:
+                  Ref: StoreLambdaFunction
+              RunOrder: 1
             - Name: UnitTest
               ActionTypeId:
-                  Category: Build
+                  Category: Test
                   Owner: AWS
                   Version: 1
                   Provider: CodeBuild
               InputArtifacts:
                 - Name: SourceOutput
-              OutputArtifacts:
-                - Name: UnitTestOutput
+              OutputArtifacts: []
               Configuration:
                   ProjectName:
                     Ref: UnitTest
               RunOrder: 1
             - Name: Deploy
               ActionTypeId:
-                  Category: Build
+                  Category: Test
                   Owner: AWS
                   Version: 1
                   Provider: CodeBuild
               InputArtifacts:
                 - Name: SourceOutput
-              OutputArtifacts:
-                - Name: DeployOutput
+              OutputArtifacts: []
               Configuration:
-                  ProjectName:
-                    Ref: Deploy
+                ProjectName:
+                  Ref: Deploy
               RunOrder: 2
           - Name: Package
             Actions:
@@ -123,9 +153,22 @@ resources:
               OutputArtifacts:
                 - Name: PackageOutput
               Configuration:
-                  ProjectName:
-                    Ref: Package
+                ProjectName:
+                  Ref: Package
               RunOrder: 1
+#            - Name: Lambda
+#              ActionTypeId:
+#                Category: Invoke
+#                Owner: AWS
+#                Version: 1
+#                Provider: Lambda
+#              InputArtifacts:
+#                - Name: SourceOutput
+#              OutputArtifacts: []
+#              Configuration:
+#                FunctionName:
+#                  Ref: StoreLambdaFunction
+#              RunOrder: 2
 
     UnitTest:
       Type: AWS::CodeBuild::Project
