@@ -18,10 +18,8 @@ custom:
   oauthToken: ${file(oauth_token.yml):github}
 
 functions:
-  hello:
-    handler: handler.hello
-  store:
-    handler: handler.store
+  package:
+    handler: handler.package
     environment:
       storage_bucket: ${self:service}-release
       storage_key: ts-simulator-release.zip
@@ -30,6 +28,10 @@ functions:
     handler: handler.release
     events:
       - s3: ${self:service}-release
+  transfer:
+    handler: handler.transfer
+    events:
+      - sns: ${self:service}-transfer
 
 resources:
   Resources:
@@ -101,19 +103,6 @@ resources:
                 RunOrder: 1
           - Name: Test
             Actions:
-            - Name: Lambda
-              ActionTypeId:
-                Category: Invoke
-                Owner: AWS
-                Version: 1
-                Provider: Lambda
-              InputArtifacts:
-                - Name: SourceOutput
-              OutputArtifacts: []
-              Configuration:
-                FunctionName:
-                  Ref: StoreLambdaFunction
-              RunOrder: 1
             - Name: UnitTest
               ActionTypeId:
                   Category: Test
@@ -142,33 +131,20 @@ resources:
               RunOrder: 2
           - Name: Package
             Actions:
-            - Name: Package
+            - Name: Lambda
               ActionTypeId:
-                  Category: Build
-                  Owner: AWS
-                  Version: 1
-                  Provider: CodeBuild
+                Category: Invoke
+                Owner: AWS
+                Version: 1
+                Provider: Lambda
               InputArtifacts:
                 - Name: SourceOutput
-              OutputArtifacts:
-                - Name: PackageOutput
+              OutputArtifacts: []
               Configuration:
-                ProjectName:
-                  Ref: Package
-              RunOrder: 1
-#            - Name: Lambda
-#              ActionTypeId:
-#                Category: Invoke
-#                Owner: AWS
-#                Version: 1
-#                Provider: Lambda
-#              InputArtifacts:
-#                - Name: SourceOutput
-#              OutputArtifacts: []
-#              Configuration:
-#                FunctionName:
-#                  Ref: StoreLambdaFunction
-#              RunOrder: 2
+                FunctionName:
+                  Ref: PackageLambdaFunction
+              RunOrder: 3
+
 
     UnitTest:
       Type: AWS::CodeBuild::Project
@@ -220,28 +196,3 @@ resources:
               build:
                 commands:
                   - serverless deploy
-
-    Package:
-      Type: AWS::CodeBuild::Project
-      Properties:
-        Artifacts:
-          Type: CODEPIPELINE
-        Environment:
-          ComputeType: BUILD_GENERAL1_SMALL
-          Image: aws/codebuild/nodejs:7.0.0
-          Type: LINUX_CONTAINER
-        Name: ${self:service}-Package
-        ServiceRole:
-          Ref: BuildRole
-        Source:
-          Type: CODEPIPELINE
-          BuildSpec: |
-            version: 0.1
-            phases:
-              build:
-                commands:
-                  - ls -l
-            artifacts:
-              files:
-                - "**/*"
-

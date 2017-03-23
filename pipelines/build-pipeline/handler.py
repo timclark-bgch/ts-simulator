@@ -8,13 +8,15 @@ import tempfile
 pipeline = boto3.client('codepipeline')
 
 
-def store(event, *_):
+def package(event, *_):
 	print json.dumps(event)
 
 	job = event['CodePipeline.job']['id']
 
 	try:
-		__source_to_s3(event['CodePipeline.job']['data'])
+		job_data = event['CodePipeline.job']['data']
+		__source_to_s3(job_data)
+
 		pipeline.put_job_success_result(jobId=job, executionDetails={'summary': 'Artifacts stored'})
 
 		return "Success"
@@ -40,4 +42,8 @@ def __source_to_s3(job_data):
 
 
 def release(event, *_):
+	print json.dumps(event)
+
+
+def transfer(event, *_):
 	print json.dumps(event)
