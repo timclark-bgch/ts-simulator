@@ -6,6 +6,7 @@ import botocore.config
 import tempfile
 
 pipeline = boto3.client('codepipeline')
+sns = boto3.client('sns')
 
 
 def package(event, *_):
@@ -32,17 +33,24 @@ def __source_to_s3(job_data):
 													aws_secret_access_key=job_data['artifactCredentials']['secretAccessKey'],
 													aws_session_token=job_data['artifactCredentials']['sessionToken'])
 
-	source_s3 = session.client('s3', region_name='eu-west-1', config=botocore.config.Config(signature_version='s3v4'))
+	s3 = session.client('s3', region_name='eu-west-1', config=botocore.config.Config(signature_version='s3v4'))
 
 	source = job_data['inputArtifacts'][0]['location']['s3Location']
+	revision = job_data['inputArtifacts'][0]['revision']
 
 	with tempfile.NamedTemporaryFile() as tmp_file:
-		source_s3.download_file(source['bucketName'], source['objectKey'], tmp_file.name)
-		boto3.client('s3').upload_file(tmp_file.name, os.environ['storage_bucket'], os.environ['storage_key'])
+		s3.download_file(source['bucketName'], source['objectKey'], tmp_file.name)
+		boto3.client('s3').upload_file(tmp_file.name, os.environ['storage_bucket'], os.environ['storage_key'],
+																	ExtraArgs={'Metadata': {'commit': revision}})
 
 
 def release(event, *_):
 	print json.dumps(event)
+	print os.environ['sns_topic']
+
+	response = sns.publish(TopicArn=os.environ['sns_topic'], Message=json.dumps(event))
+
+	print "Published - {}".format(response)
 
 
 def transfer(event, *_):

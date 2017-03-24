@@ -13,6 +13,10 @@ provider:
       Action:
         - s3:*
       Resource: "*"
+    - Effect: Allow
+      Action:
+        - sns:*
+      Resource: "*"
 
 custom:
   oauthToken: ${file(oauth_token.yml):github}
@@ -28,10 +32,13 @@ functions:
     handler: handler.release
     events:
       - s3: ${self:service}-release
+    environment:
+      sns_topic:
+        Ref: SNSTopicTransfer
   transfer:
     handler: handler.transfer
     events:
-      - sns: ${self:service}-transfer
+      - sns: transfer
 
 resources:
   Resources:
