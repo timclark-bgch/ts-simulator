@@ -38,19 +38,33 @@ def __source_to_s3(job_data):
 	source = job_data['inputArtifacts'][0]['location']['s3Location']
 	revision = job_data['inputArtifacts'][0]['revision']
 
+	source_key = source['objectKey']
+	dest_key = '{}/{}'.format(os.environ['storage_folder'], source_key.split('/')[-1])
+
 	with tempfile.NamedTemporaryFile() as tmp_file:
-		s3.download_file(source['bucketName'], source['objectKey'], tmp_file.name)
-		boto3.client('s3').upload_file(tmp_file.name, os.environ['storage_bucket'], os.environ['storage_key'],
-																	ExtraArgs={'Metadata': {'commit': revision}})
+		s3.download_file(source['bucketName'], source_key, tmp_file.name)
+		boto3.client('s3').upload_file(tmp_file.name, os.environ['storage_bucket'], dest_key,
+																	 ExtraArgs={'Metadata': {'commit': revision}})
+
+
+target_environments = {
+	'staging': {'role': 'role'},
+	'production': {'role': 'role'}
+}
 
 
 def release(event, *_):
 	print json.dumps(event)
 	print os.environ['sns_topic']
 
-	response = sns.publish(TopicArn=os.environ['sns_topic'], Message=json.dumps(event))
+	for record in event['Records']:
+		bucket = record['s3']['bucket']['name']
+		key = record['s3']['object']['key']
 
-	print "Published - {}".format(response)
+		for target in target_environments.keys():
+			message = {'target': target, 'bucket': bucket, 'key': key}
+			response = sns.publish(TopicArn=os.environ['sns_topic'], Message=json.dumps(message))
+			print "Published - {}".format(response)
 
 
 def transfer(event, *_):
