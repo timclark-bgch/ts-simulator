@@ -205,4 +205,4 @@ resources:
                   - npm install -g serverless
               build:
                 commands:
-                  - serverless deploy - staging
+                  - serverless deploy -s staging

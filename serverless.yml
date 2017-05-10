@@ -4,6 +4,11 @@ provider:
   name: aws
   runtime: python2.7
 
+custom:
+  defaultStage: dev
+  profiles:
+    staging: staging
+
 functions:
   hello:
     handler: handler.hello
