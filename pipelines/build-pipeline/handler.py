@@ -9,6 +9,10 @@ pipeline = boto3.client('codepipeline')
 sns = boto3.client('sns')
 
 
+def __something_new():
+	pass
+
+
 def package(event, *_):
 	print json.dumps(event)
 
@@ -54,9 +58,6 @@ target_environments = {
 
 
 def release(event, *_):
-	print json.dumps(event)
-	print os.environ['sns_topic']
-
 	for record in event['Records']:
 		bucket = record['s3']['bucket']['name']
 		key = record['s3']['object']['key']
@@ -69,3 +70,8 @@ def release(event, *_):
 
 def transfer(event, *_):
 	print json.dumps(event)
+
+# download package
+# assume role
+# upload package to target
+

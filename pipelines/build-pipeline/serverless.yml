@@ -168,7 +168,7 @@ resources:
         Source:
           Type: CODEPIPELINE
           BuildSpec: |
-            version: 0.1
+            version: 0.2
             phases:
               install:
                 commands:
@@ -195,11 +195,14 @@ resources:
         Source:
           Type: CODEPIPELINE
           BuildSpec: |
-            version: 0.1
+            version: 0.2
+            env:
+              variables:
+                AWS_CONFIG_FILE: "./aws-config"
             phases:
               install:
                 commands:
                   - npm install -g serverless
               build:
                 commands:
-                  - serverless deploy
+                  - serverless deploy - staging
