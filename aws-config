@@ -1,3 +1,0 @@
-[profile staging]
-role_arn = arn:aws:iam::448298206431:role/PlatformTeam4Deployment
-source_profile = default
