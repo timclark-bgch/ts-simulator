@@ -202,7 +202,8 @@ resources:
             phases:
               install:
                 commands:
+                  - apt-get update && apt-get install jq
                   - npm install -g serverless
               build:
                 commands:
-                  - ./deploy_with_role.sh serverless deploy -v -s staging
+                  - sh deploy_with_role.sh serverless deploy -v -s staging
