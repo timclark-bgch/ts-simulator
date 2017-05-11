@@ -4,10 +4,10 @@ provider:
   name: aws
   runtime: python2.7
 
-custom:
-  defaultStage: dev
-  profiles:
-    staging: staging
+#custom:
+#  defaultStage: dev
+#  profiles:
+#    test: test-profile
 
 functions:
   hello:

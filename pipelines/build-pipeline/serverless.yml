@@ -110,19 +110,19 @@ resources:
                 RunOrder: 1
           - Name: Test
             Actions:
-            - Name: UnitTest
-              ActionTypeId:
-                  Category: Test
-                  Owner: AWS
-                  Version: 1
-                  Provider: CodeBuild
-              InputArtifacts:
-                - Name: SourceOutput
-              OutputArtifacts: []
-              Configuration:
-                  ProjectName:
-                    Ref: UnitTest
-              RunOrder: 1
+#            - Name: UnitTest
+#              ActionTypeId:
+#                  Category: Test
+#                  Owner: AWS
+#                  Version: 1
+#                  Provider: CodeBuild
+#              InputArtifacts:
+#                - Name: SourceOutput
+#              OutputArtifacts: []
+#              Configuration:
+#                  ProjectName:
+#                    Ref: UnitTest
+#              RunOrder: 1
             - Name: Deploy
               ActionTypeId:
                   Category: Test
@@ -135,22 +135,22 @@ resources:
               Configuration:
                 ProjectName:
                   Ref: Deploy
-              RunOrder: 2
-          - Name: Package
-            Actions:
-            - Name: Lambda
-              ActionTypeId:
-                Category: Invoke
-                Owner: AWS
-                Version: 1
-                Provider: Lambda
-              InputArtifacts:
-                - Name: SourceOutput
-              OutputArtifacts: []
-              Configuration:
-                FunctionName:
-                  Ref: PackageLambdaFunction
-              RunOrder: 3
+              RunOrder: 1
+#          - Name: Package
+#            Actions:
+#            - Name: Lambda
+#              ActionTypeId:
+#                Category: Invoke
+#                Owner: AWS
+#                Version: 1
+#                Provider: Lambda
+#              InputArtifacts:
+#                - Name: SourceOutput
+#              OutputArtifacts: []
+#              Configuration:
+#                FunctionName:
+#                  Ref: PackageLambdaFunction
+#              RunOrder: 3
 
 
     UnitTest:
@@ -198,11 +198,11 @@ resources:
             version: 0.2
             env:
               variables:
-                AWS_CONFIG_FILE: "./aws-config"
+                DEPLOY_ROLE_ARN: "arn:aws:iam::448298206431:role/PlatformTeam4Deployment"
             phases:
               install:
                 commands:
                   - npm install -g serverless
               build:
                 commands:
-                  - serverless deploy -s staging
+                  - ./deploy_with_role.sh serverless deploy -v -s staging
